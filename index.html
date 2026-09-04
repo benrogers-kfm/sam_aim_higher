@@ -1,0 +1,1035 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Journey</title>
+
+<style>
+  :root{
+    --ground:#060b1f;
+    --ground-2:#081026;
+    --panel:#0b1430;
+    --panel-2:#0e1a3d;
+    --line:#1b2a55;
+    --line-soft:#152046;
+    --ink:#eaf0ff;
+    --ink-2:#b9c6ee;
+    --ink-3:#7e8ec4;
+    --accent:#4d7cff;
+    --accent-2:#38e8d0;
+    --gold:#ffd166;
+    --shadow:0 18px 50px -12px rgba(0,0,0,.7);
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 800px at 78% -10%, rgba(77,124,255,.18), transparent 60%),
+      radial-gradient(900px 700px at 10% 110%, rgba(56,232,208,.10), transparent 55%),
+      var(--ground);
+    color:var(--ink);
+    font-family:"Manrope",system-ui,sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{position:fixed;inset:0}
+  canvas#c{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+  canvas#c.grabbing{cursor:grabbing}
+  canvas#c.pointer{cursor:pointer}
+
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;gap:14px;
+    padding:18px 24px;
+    pointer-events:none;
+  }
+  .brand{pointer-events:auto;display:flex;align-items:center;gap:13px}
+  .brand .glyph{
+    width:40px;height:40px;flex:0 0 auto;border-radius:12px;
+    background:linear-gradient(150deg,#12245e,#0a1330);
+    border:1px solid #2a3d78;
+    display:grid;place-items:center;box-shadow:var(--shadow);
+  }
+  .brand .glyph svg{width:24px;height:24px}
+  .brand h1{
+    font-family:"Sora",sans-serif;font-weight:800;letter-spacing:-.02em;
+    font-size:19px;margin:0;line-height:1;
+  }
+  .brand .tag{
+    font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--ink-3);margin-top:5px;
+  }
+  .spacer{flex:1}
+  .vpill{
+    pointer-events:auto;display:inline-flex;align-items:center;gap:9px;
+    padding:10px 14px;border-radius:999px;
+    background:rgba(10,20,46,.72);backdrop-filter:blur(14px);
+    border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--ink-2);
+    white-space:nowrap;
+  }
+  .vpill b{color:var(--gold);font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:800}
+  .vpill .ld{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold);animation:blip 1.6s infinite}
+  .searchwrap{pointer-events:auto;position:relative;width:min(240px,32vw)}
+  .searchwrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-3)}
+  #search{
+    width:100%;padding:11px 14px 11px 38px;
+    background:rgba(10,20,46,.72);backdrop-filter:blur(14px);
+    border:1px solid var(--line);border-radius:12px;
+    color:var(--ink);font-family:"Manrope","Segoe UI",system-ui,sans-serif;font-size:14px;outline:none;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  #search::placeholder{color:var(--ink-3)}
+  #search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(77,124,255,.18)}
+  .btn{
+    pointer-events:auto;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:11px 15px;border-radius:12px;cursor:pointer;
+    background:rgba(10,20,46,.72);backdrop-filter:blur(14px);
+    border:1px solid var(--line);color:var(--ink-2);
+    font-family:"Manrope","Segoe UI",system-ui,sans-serif;font-weight:600;font-size:13px;
+    transition:border-color .2s, color .2s, background .2s;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--ink)}
+  .btn svg{width:15px;height:15px}
+  .btn.active{background:linear-gradient(150deg,#2a56d6,#1c3aa0);border-color:#3a5fd0;color:#fff}
+  .btn.primary{background:linear-gradient(150deg,#2a56d6,#1c3aa0);border-color:#3a5fd0;color:#fff}
+  .btn.primary:hover{filter:brightness(1.1)}
+
+  .filters{
+    position:fixed;top:74px;left:24px;z-index:18;
+    display:flex;gap:8px;flex-wrap:wrap;pointer-events:none;max-width:60vw;
+  }
+  .fchip{
+    pointer-events:auto;cursor:pointer;user-select:none;
+    display:inline-flex;align-items:center;gap:7px;
+    padding:8px 13px;border-radius:999px;
+    background:rgba(10,20,46,.66);backdrop-filter:blur(12px);
+    border:1px solid var(--line);color:var(--ink-3);
+    font-size:12.5px;font-weight:600;transition:.16s;
+  }
+  .fchip:hover{color:var(--ink-2);border-color:#33477e}
+  .fchip.on{color:#fff;border-color:var(--accent-2);background:rgba(56,232,208,.12)}
+  .fchip .fd{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.7}
+
+  .legend{
+    position:fixed;left:24px;bottom:24px;z-index:15;
+    background:rgba(9,17,40,.72);backdrop-filter:blur(16px);
+    border:1px solid var(--line);border-radius:16px;padding:15px 16px;
+    box-shadow:var(--shadow);max-width:230px;
+  }
+  .legend .lh{
+    font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--ink-3);margin-bottom:11px;
+  }
+  .legend .row{
+    display:flex;align-items:center;gap:9px;padding:5px 6px;margin:1px -6px;
+    border-radius:8px;cursor:pointer;user-select:none;transition:background .15s;
+  }
+  .legend .row:hover{background:rgba(255,255,255,.05)}
+  .legend .row.off{opacity:.38}
+  .legend .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 8px currentColor}
+  .legend .row span{font-size:12.5px;color:var(--ink-2);font-weight:500}
+
+  .minimap{
+    position:fixed;right:24px;bottom:24px;z-index:16;
+    width:176px;height:124px;border-radius:14px;overflow:hidden;
+    background:rgba(6,11,28,.82);backdrop-filter:blur(12px);
+    border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;
+    transition:opacity .3s;
+  }
+  .minimap.hide{opacity:0;pointer-events:none}
+  .minimap .ml{
+    position:absolute;top:8px;left:11px;z-index:2;
+    font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+  }
+  #mini{display:block;width:100%;height:100%}
+
+  .hint{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:14;
+    font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-3);
+    text-align:center;line-height:1.9;pointer-events:none;
+  }
+  .hint b{color:var(--ink-2);font-weight:400}
+  .hint kbd{color:var(--accent-2)}
+
+  .panel{
+    position:fixed;top:0;right:0;bottom:0;width:min(430px,92vw);z-index:30;
+    background:linear-gradient(180deg,rgba(11,20,48,.96),rgba(7,13,32,.98));
+    backdrop-filter:blur(20px);
+    border-left:1px solid var(--line);
+    box-shadow:-24px 0 60px -20px rgba(0,0,0,.8);
+    transform:translateX(105%);transition:transform .5s cubic-bezier(.16,1,.3,1);
+    display:flex;flex-direction:column;
+  }
+  .panel.open{transform:translateX(0)}
+  .panel .scroll{overflow-y:auto;padding:26px 28px 34px;flex:1}
+  .panel .scroll::-webkit-scrollbar{width:8px}
+  .panel .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  .panel .close{
+    position:absolute;top:20px;right:20px;z-index:2;
+    width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+    background:rgba(10,20,46,.7);color:var(--ink-2);cursor:pointer;
+    display:grid;place-items:center;transition:.2s;
+  }
+  .panel .close:hover{color:#fff;border-color:var(--accent)}
+  .p-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;padding:6px 11px;border-radius:999px;
+    border:1px solid currentColor;font-weight:700;
+  }
+  .p-here{
+    display:inline-flex;align-items:center;gap:6px;margin-left:8px;
+    font-size:10.5px;font-family:"Space Mono",ui-monospace,"Consolas",monospace;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent-2);
+  }
+  .p-here .live{width:7px;height:7px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 10px var(--accent-2);animation:blip 1.6s infinite}
+  @keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
+  .p-title{
+    font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:800;font-size:29px;line-height:1.08;
+    letter-spacing:-.02em;margin:16px 0 14px;text-wrap:balance;
+  }
+  .p-desc{font-size:14.5px;line-height:1.6;color:var(--ink-2);margin:0 0 22px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 0 22px}
+  .stat{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:12px;padding:11px 12px}
+  .stat .sk{font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+  .stat .sv{font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:700;font-size:15px;color:var(--ink)}
+  .stat .sv.acc{color:var(--accent-2)}
+
+  .sect{margin:22px 0}
+  .sect-h{
+    display:flex;align-items:center;gap:9px;margin-bottom:13px;
+    font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-3);
+  }
+  .sect-h .ic{width:15px;height:15px;color:var(--accent)}
+
+  .story{
+    display:flex;gap:13px;align-items:flex-start;
+    padding:16px;border-radius:14px;border:1px solid var(--line);
+    background:linear-gradient(120deg,rgba(77,124,255,.08),rgba(14,26,61,.5));margin-bottom:6px;
+  }
+  .savatar{
+    width:44px;height:44px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;
+    font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:700;font-size:15px;color:#fff;
+  }
+  .squote{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink);font-style:italic}
+  .sname{font-size:12px;color:var(--ink-3)}
+  .sname b{color:var(--ink-2);font-weight:600}
+
+  .vac{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:15px 16px;border-radius:14px;border:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  .vac.open{border-color:rgba(255,209,102,.4);background:linear-gradient(120deg,rgba(255,209,102,.10),rgba(14,26,61,.6))}
+  .vac .vn{font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:700;font-size:16px}
+  .vac .vn .num{color:var(--gold)}
+  .vac .vsub{font-size:12px;color:var(--ink-3);margin-top:2px}
+  .toggle{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .toggle .tl{font-size:11px;color:var(--ink-3);font-family:"Space Mono",ui-monospace,"Consolas",monospace}
+  .switch{width:38px;height:22px;border-radius:999px;background:#1b2a55;position:relative;transition:background .2s;flex:0 0 auto}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#7e8ec4;transition:.2s}
+  .switch.on{background:var(--accent)}
+  .switch.on::after{left:19px;background:#fff}
+
+  .course{margin:12px 0}
+  .course .ct{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;cursor:pointer}
+  .course .ct .nm{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .course.done .ct .nm{color:var(--ink-3);text-decoration:line-through}
+  .course .ct .pc{font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:11px;color:var(--ink-3)}
+  .bar{height:6px;border-radius:999px;background:#14203f;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .5s ease}
+  .readiness{font-size:12px;color:var(--ink-3);margin-top:14px;font-family:"Space Mono",ui-monospace,"Consolas",monospace}
+  .readiness b{color:var(--accent-2)}
+
+  .we{padding:16px;border-radius:14px;border:1px dashed var(--line);background:rgba(56,232,208,.05)}
+  .we p{margin:0 0 12px;font-size:13px;color:var(--ink-2);line-height:1.5}
+  .we .slots{font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:11px;color:var(--accent-2)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    padding:9px 13px;border-radius:11px;border:1px solid var(--line);
+    background:var(--panel-2);font-size:13px;font-weight:600;color:var(--ink-2);transition:.18s;
+  }
+  .chip:hover{border-color:var(--accent);color:#fff;transform:translateY(-1px)}
+  .chip .cdot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .chip .arr{color:var(--ink-3);margin-left:1px}
+
+  .moved .mrow{
+    display:flex;align-items:center;gap:12px;cursor:pointer;
+    padding:9px 6px;margin:2px -6px;border-radius:10px;transition:background .15s;
+  }
+  .moved .mrow:hover{background:rgba(255,255,255,.04)}
+  .mav{width:30px;height:30px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:700;font-size:11px;color:#fff}
+  .mname{flex:1;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+  .mpc{font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:12px;color:var(--accent-2);font-weight:700}
+  .mpc span{color:var(--ink-3);font-weight:400}
+
+  .cvfoot{margin-top:26px;padding-top:20px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:11px}
+  .cvfoot svg{width:20px;height:20px;color:var(--accent-2);flex:0 0 auto}
+  .cvfoot p{margin:0;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+  .cvfoot b{color:var(--ink)}
+
+  .cmpbar{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:40;
+    display:flex;align-items:center;gap:14px;
+    padding:11px 16px;border-radius:14px;
+    background:rgba(11,20,48,.95);border:1px solid var(--accent-2);box-shadow:var(--shadow);
+    font-size:13.5px;font-weight:600;color:var(--ink);
+    transition:transform .4s cubic-bezier(.16,1,.3,1);
+  }
+  .cmpbar.show{transform:translateX(-50%) translateY(0)}
+  .cmpbar .cn{font-family:"Space Mono",ui-monospace,"Consolas",monospace;color:var(--accent-2)}
+  .cmpbar button{background:none;border:1px solid var(--line);color:var(--ink-3);border-radius:8px;padding:5px 10px;cursor:pointer;font-family:"Manrope","Segoe UI",system-ui,sans-serif;font-weight:600;font-size:12px}
+  .cmpbar button:hover{color:#fff;border-color:var(--accent)}
+
+  .cmpOverlay{
+    position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:24px;
+    background:rgba(4,8,20,.72);backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:opacity .3s;
+  }
+  .cmpOverlay.open{opacity:1;pointer-events:auto}
+  .cmpCard{
+    width:min(720px,96vw);max-height:90vh;overflow:auto;
+    background:linear-gradient(180deg,rgba(12,22,52,.98),rgba(7,13,32,.99));
+    border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:26px;
+    transform:scale(.96);transition:transform .3s cubic-bezier(.16,1,.3,1);
+  }
+  .cmpOverlay.open .cmpCard{transform:scale(1)}
+  .cmpTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .cmpTop h3{font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:800;font-size:20px;margin:0}
+  .cmpTop .x{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:none;color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+  .cmpTop .x:hover{color:#fff;border-color:var(--accent)}
+  .cmpApart{text-align:center;font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:12px;color:var(--ink-3);margin:4px 0 20px}
+  .cmpApart b{color:var(--accent-2)}
+  .cmpGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .cmpCol{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--panel-2)}
+  .cmpCol .ch{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .cmpCol .cbadge{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:800;font-size:12px;color:#fff}
+  .cmpCol .cdept{font-family:"Space Mono",ui-monospace,"Consolas",monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase}
+  .cmpCol h4{font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:700;font-size:17px;margin:8px 0 16px;line-height:1.15}
+  .cmpCol .mrow2{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-top:1px solid var(--line-soft);font-size:13px}
+  .cmpCol .mrow2 .k{color:var(--ink-3)}
+  .cmpCol .mrow2 .v{font-family:"Sora","Segoe UI",system-ui,sans-serif;font-weight:700;color:var(--ink)}
+  @media (max-width:560px){.cmpGrid{grid-template-columns:1fr}}
+
+
+  #toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+  .toast{
+    background:rgba(11,20,48,.95);border:1px solid var(--accent);border-radius:12px;
+    padding:12px 18px;font-size:13.5px;font-weight:600;color:var(--ink);
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;
+    animation:tin .3s ease, tout .3s 2.5s forwards;
+  }
+  .toast svg{width:16px;height:16px;color:var(--accent-2)}
+  @keyframes tin{from{opacity:0;transform:translateY(12px)}}
+  @keyframes tout{to{opacity:0;transform:translateY(-8px)}}
+
+  @media (max-width:720px){
+    .brand .tag{display:none}
+    .searchwrap{width:34vw}
+    .vpill span.lbl{display:none}
+    .btn span{display:none}
+    .hint{display:none}
+    .legend{max-width:150px;padding:12px}
+    .minimap{display:none}
+    .filters{max-width:90vw}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;transition-duration:.12s!important}
+  }
+</style>
+
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="glyph">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="5" cy="6" r="2.4" fill="#4d7cff"/><circle cx="19" cy="7" r="2.4" fill="#38e8d0"/><circle cx="12" cy="18" r="2.4" fill="#8b7dff"/><path d="M5 6L12 18M19 7L12 18M5 6L19 7" stroke="#3a5088" stroke-width="1.3"/></svg>
+    </div>
+    <div>
+      <h1>Your Journey</h1>
+      <div class="tag">Map your future</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="vpill" id="vpill"><span class="ld"></span><b id="vnum">0</b>&nbsp;<span class="lbl">open roles</span></div>
+  <div class="searchwrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+    <input id="search" placeholder="Search…" autocomplete="off">
+  </div>
+  <button class="btn" id="btn-compare">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v18M15 3v18M4 8h5M4 16h5M15 8h5M15 16h5"/></svg>
+    <span>Compare</span>
+  </button>
+  <button class="btn" id="btn-here">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    <span>You are here</span>
+  </button>
+  <button class="btn" id="btn-reset">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+    <span>Reset</span>
+  </button>
+</div>
+
+<div class="filters" id="filters">
+  <div class="fchip" data-f="vac"><span class="fd"></span>Has vacancies</div>
+  <div class="fchip" data-f="near"><span class="fd"></span>1 step from you</div>
+  <div class="fchip" data-f="entry"><span class="fd"></span>No experience needed</div>
+</div>
+
+<div class="legend" id="legend"><div class="lh">Departments</div></div>
+
+<div class="minimap" id="minimap"><span class="ml">Network</span><canvas id="mini"></canvas></div>
+
+<div class="hint">
+  <div><b>Drag</b> to explore · <b>Scroll</b> to zoom · <kbd>Click</kbd> a role</div>
+</div>
+
+<div class="cmpbar" id="cmpbar">
+  <span>Compare mode — pick two roles <span class="cn" id="cmpcount">0/2</span></span>
+  <button id="cmpcancel">Cancel</button>
+</div>
+
+<div class="panel" id="panel">
+  <button class="close" id="p-close"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="scroll" id="p-body"></div>
+</div>
+
+<div class="cmpOverlay" id="cmpOverlay">
+  <div class="cmpCard" id="cmpCard"></div>
+</div>
+
+<div id="toasts"></div>
+
+<noscript>
+  <div style="position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:#060b1f;padding:24px;text-align:center;font-family:sans-serif;color:#eaf0ff">
+    <div style="max-width:440px">
+      <div style="color:#38e8d0;letter-spacing:.3em;font-size:11px;text-transform:uppercase;margin-bottom:14px">Your Journey</div>
+      <h2 style="font-size:24px;margin:0 0 12px">JavaScript is switched off</h2>
+      <p style="color:#9fb0dd;font-size:15px;line-height:1.55">This interactive map needs JavaScript enabled. Please open the file in Microsoft Edge or Google Chrome with scripts allowed.</p>
+    </div>
+  </div>
+</noscript>
+
+<script>
+(function(){
+  var modern = !!(window.requestAnimationFrame && Object.fromEntries && window.Set && window.Map && document.querySelectorAll);
+  if(modern) return;
+  var show=function(){
+    if(!document.body) return;
+    var o=document.createElement('div');
+    o.setAttribute('style','position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#060b1f;padding:24px;text-align:center;font-family:sans-serif');
+    o.innerHTML='<div style="max-width:460px">'
+      +'<div style="color:#38e8d0;letter-spacing:.3em;font-size:11px;text-transform:uppercase;margin-bottom:16px">Your Journey</div>'
+      +'<h2 style="color:#eaf0ff;font-size:25px;margin:0 0 14px;line-height:1.2">This map needs a modern browser</h2>'
+      +'<p style="color:#9fb0dd;font-size:15px;line-height:1.55">Please open it in <b style="color:#fff">Microsoft Edge</b> or <b style="color:#fff">Google Chrome</b>.</p>'
+      +'</div>';
+    document.body.appendChild(o);
+  };
+  if(document.body) show();
+  else if(document.addEventListener) document.addEventListener('DOMContentLoaded',show);
+  else window.onload=show;
+})();
+</script>
+
+<script>
+(() => {
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+  const DEPTS = {
+    ops:      {name:"Centre Operations", color:"#4d7cff"},
+    tech:     {name:"Technical & MOT",   color:"#2fd4c4"},
+    customer: {name:"Sales & Customer",  color:"#5fa8ff"},
+    contact:  {name:"Contact Centre",    color:"#8b7dff"},
+    people:   {name:"People & L&D",      color:"#4de0a8"},
+    digital:  {name:"Digital & Data",    color:"#46b6ff"},
+    supply:   {name:"Supply Chain",      color:"#6d84d4"},
+    corp:     {name:"Head Office",       color:"#b28bff"},
+  };
+
+  const C = {
+    hs:["Health & Safety Essentials",100], cust:["Customer First",70],
+    tyre:["Tyre & Wheel Fundamentals",90], brake:["Braking Systems",55],
+    mot:["MOT Tester Qualification",25], diag:["Advanced Diagnostics",10],
+    lead:["Leadership Foundations",40], coach:["Coaching Conversations",20],
+    fin:["Commercial & Margin Basics",30], people:["Managing People",15],
+    fleet:["Fleet & B2B Selling",45], data:["Data Literacy",50],
+    sql:["SQL & Reporting",20], agile:["Agile Delivery",35],
+    proc:["Procurement & Negotiation",25], comms:["Storytelling & Comms",60],
+    excel:["Excel to Expert",65], it:["IT Service Foundations",80],
+  };
+
+  const ROLES = [
+    {id:"tyre",d:"ops",lvl:1,t:"Tyre & Exhaust Technician",here:true,vac:0,
+     desc:"The heartbeat of every centre — fitting tyres, exhausts and batteries and giving customers a reason to come back.",
+     courses:["hs","tyre","cust","brake"],next:["stech"],side:["csa","appr","ware"]},
+    {id:"stech",d:"ops",lvl:2,t:"Senior Technician",vac:12,
+     desc:"Lead work on the ramp, mentor new technicians and own the tricky jobs the rest of the team escalate to you.",
+     courses:["hs","brake","diag","coach"],next:["acm"],side:["ttrain","ccadv"],
+     story:{q:"I came in fitting tyres with zero experience. Two years on I'm running the ramp and training the new lads.",name:"Marcus T.",role:"5 years at the business"}},
+    {id:"acm",d:"ops",lvl:3,t:"Assistant Centre Manager",vac:8,
+     desc:"Run the shift, hit the numbers and step up when the Centre Manager is away. Your first taste of leadership.",
+     courses:["lead","cust","fin","coach"],next:["cm"],side:["cctl","fadv"]},
+    {id:"cm",d:"ops",lvl:4,t:"Centre Manager",vac:5,
+     desc:"Full P&L for your centre — people, performance and customers. The role everything in operations points towards.",
+     courses:["lead","fin","people","cust"],next:["am"],side:["ldbp","fmgr","proc"],
+     story:{q:"Nobody in my family had ever managed anything. Now I've got a team of twelve and my own set of keys.",name:"Priya S.",role:"Centre Manager, Leeds"}},
+    {id:"am",d:"ops",lvl:5,t:"Area Manager",vac:2,
+     desc:"Coach a cluster of centres to greatness. Strategy, standards and developing the next generation of managers.",
+     courses:["lead","people","fin"],next:["rm"],side:["hrbp"],
+     story:{q:"I started on tyres at 18. I look after nine centres now — the map was always there, I just couldn't see it.",name:"Deano W.",role:"Area Manager, North West"}},
+    {id:"rm",d:"ops",lvl:6,t:"Regional Manager",vac:0,
+     desc:"Own a whole region's performance and culture. A senior leadership seat with real commercial weight.",
+     courses:["lead","fin","people"],next:["opsdir"],side:[]},
+    {id:"opsdir",d:"ops",lvl:6,t:"Operations Director",vac:0,
+     desc:"Set the direction for the entire retail estate. Where the biggest journeys in the business arrive.",
+     courses:["lead","fin"],next:[],side:[]},
+    {id:"appr",d:"tech",lvl:1,t:"Vehicle Apprentice",vac:20,
+     desc:"Earn while you learn. A structured route into the trade with a recognised qualification at the end.",
+     courses:["hs","tyre","brake"],next:["mott","stech"],side:["tyre"]},
+    {id:"mott",d:"tech",lvl:2,t:"MOT Tester",vac:9,
+     desc:"Qualified to carry out MOT tests — a licence that follows you for life and opens doors across the industry.",
+     courses:["hs","mot","brake","diag"],next:["mtech"],side:["stech"]},
+    {id:"mtech",d:"tech",lvl:3,t:"Master Technician",vac:4,
+     desc:"The technical authority. Complex diagnostics, hybrid & EV systems and the person others learn from.",
+     courses:["diag","mot","brake"],next:["ttrain"],side:["acm"],
+     story:{q:"I love the diagnostics side — EVs, hybrids, the lot. The training they put me through is worth thousands.",name:"Sam O.",role:"Master Technician, Bristol"}},
+    {id:"ttrain",d:"tech",lvl:4,t:"Technical Trainer",vac:3,
+     desc:"Turn your expertise into other people's ability — designing and delivering training across the network.",
+     courses:["coach","diag","comms"],next:["ldbp"],side:["mtech"]},
+    {id:"csa",d:"customer",lvl:1,t:"Customer Service Advisor",vac:14,
+     desc:"The friendly face at the front desk — booking work, explaining jobs and turning visitors into regulars.",
+     courses:["hs","cust","fin"],next:["sadv"],side:["ccadv","tyre"]},
+    {id:"sadv",d:"customer",lvl:2,t:"Sales Advisor",vac:7,
+     desc:"Match customers to the right products and grow the centre's revenue without ever losing the trust.",
+     courses:["cust","fin","fleet"],next:["fadv"],side:["mktexec"]},
+    {id:"fadv",d:"customer",lvl:3,t:"Fleet Advisor",vac:5,
+     desc:"Look after business customers with vehicle fleets — bigger relationships, bigger commercial impact.",
+     courses:["fleet","fin","cust"],next:["fmgr"],side:["acm"]},
+    {id:"fmgr",d:"customer",lvl:4,t:"Fleet Account Manager",vac:2,
+     desc:"Own major B2B accounts end to end. Negotiation, retention and growth of the fleet book.",
+     courses:["fleet","fin","proc"],next:["am"],side:["proc"]},
+    {id:"ccadv",d:"contact",lvl:1,t:"Contact Centre Advisor",vac:16,
+     desc:"Help customers over phone and chat — the calm, capable voice when something's gone wrong.",
+     courses:["hs","cust","it"],next:["cctl"],side:["csa","itsup"]},
+    {id:"cctl",d:"contact",lvl:3,t:"Contact Centre Team Leader",vac:4,
+     desc:"Lead a team of advisors, own the queue and coach the service that keeps customers loyal.",
+     courses:["lead","coach","cust"],next:["ccmgr"],side:["acm","ldco"],
+     story:{q:"I joined answering phones on nights. The coaching course changed everything — now I lead the team.",name:"Chloe R.",role:"Team Leader, Contact Centre"}},
+    {id:"ccmgr",d:"contact",lvl:4,t:"Contact Centre Manager",vac:1,
+     desc:"Run the operation — workforce planning, performance and the customer experience at scale.",
+     courses:["lead","people","data"],next:["rm"],side:["hrbp"]},
+    {id:"ldco",d:"people",lvl:2,t:"L&D Coordinator",vac:3,
+     desc:"Keep learning moving — organising courses, tracking Cornerstone completions and supporting trainers.",
+     courses:["coach","comms","excel"],next:["ldbp"],side:["hradv","comms"]},
+    {id:"ldbp",d:"people",lvl:4,t:"L&D Business Partner",vac:2,
+     desc:"Shape capability across the business — the strategy behind every skill your colleagues build.",
+     courses:["coach","people","data"],next:["hrbp"],side:["ttrain"]},
+    {id:"hradv",d:"people",lvl:3,t:"HR Advisor",vac:4,
+     desc:"The trusted guide for managers on everything people — from wellbeing to the tricky conversations.",
+     courses:["people","coach","comms"],next:["hrbp"],side:["ldco"]},
+    {id:"hrbp",d:"people",lvl:5,t:"HR Business Partner",vac:1,
+     desc:"Partner with senior leaders on people strategy for a whole part of the business.",
+     courses:["people","lead","data"],next:[],side:[]},
+    {id:"itsup",d:"digital",lvl:2,t:"IT Support Analyst",vac:5,
+     desc:"Keep the centres and offices running — the person everyone's glad exists when the tills go down.",
+     courses:["it","data","hs"],next:["dev"],side:["dana","ccadv"]},
+    {id:"dev",d:"digital",lvl:3,t:"Software Developer",vac:6,
+     desc:"Build the apps and platforms — including tools like this one — that make the whole business better.",
+     courses:["agile","sql","data"],next:["po"],side:["dana"]},
+    {id:"dana",d:"digital",lvl:3,t:"Data Analyst",vac:4,
+     desc:"Turn numbers into decisions — dashboards and insight that leaders across the business rely on.",
+     courses:["data","sql","excel"],next:["po"],side:["sana","finan"]},
+    {id:"po",d:"digital",lvl:4,t:"Product Owner",vac:2,
+     desc:"Decide what gets built and why — the bridge between the business need and the tech that delivers it.",
+     courses:["agile","data","comms"],next:[],side:["mktmgr"]},
+    {id:"ware",d:"supply",lvl:1,t:"Warehouse Operative",vac:11,
+     desc:"Keep stock flowing to every centre — accuracy and pace that the whole network depends on.",
+     courses:["hs","excel"],next:["sana"],side:["tyre"]},
+    {id:"sana",d:"supply",lvl:3,t:"Supply Chain Analyst",vac:3,
+     desc:"Forecast demand and optimise stock so the right part is always in the right place.",
+     courses:["data","excel","proc"],next:["proc"],side:["dana"]},
+    {id:"proc",d:"supply",lvl:4,t:"Procurement Manager",vac:1,
+     desc:"Negotiate with suppliers and own the deals that protect the business's margin.",
+     courses:["proc","fin","data"],next:["opsdir"],side:["fmgr"]},
+    {id:"finan",d:"corp",lvl:3,t:"Finance Analyst",vac:3,
+     desc:"The commercial conscience — planning, reporting and the analysis behind every big decision.",
+     courses:["fin","excel","data"],next:["proc"],side:["dana"]},
+    {id:"mktexec",d:"corp",lvl:2,t:"Marketing Executive",vac:4,
+     desc:"Bring the brand to life — campaigns that get customers through the door and keep them coming.",
+     courses:["comms","data","cust"],next:["mktmgr"],side:["comms","sadv"]},
+    {id:"mktmgr",d:"corp",lvl:4,t:"Marketing Manager",vac:1,
+     desc:"Own a channel or the whole customer story — strategy, budget and creative direction.",
+     courses:["comms","fin","data"],next:[],side:["po"]},
+    {id:"comms",d:"corp",lvl:3,t:"Internal Comms Partner",vac:2,
+     desc:"Keep 5,000+ colleagues connected and informed — the voice of the business to its own people.",
+     courses:["comms","coach","excel"],next:["mktmgr"],side:["ldco"]},
+  ];
+
+  const byId = Object.fromEntries(ROLES.map(r=>[r.id,r]));
+  const deptKeys = Object.keys(DEPTS);
+  const HERE = "tyre";
+  const totalVac = ROLES.reduce((s,r)=>s+r.vac,0);
+
+  const PAY = ["","£??","£??","£??","£??","£??","£??"];
+  const TIME = ["","12–18 mo","18–24 mo","2–3 yrs","3–4 yrs","4–5 yrs","—"];
+
+  const linkSet=new Set(); const links=[];
+  const addLink=(a,b)=>{const k=a<b?a+"|"+b:b+"|"+a; if(linkSet.has(k)||!byId[a]||!byId[b])return; linkSet.add(k); links.push({a,b});};
+  ROLES.forEach(r=>{(r.next||[]).forEach(t=>addLink(r.id,t)); (r.side||[]).forEach(t=>addLink(r.id,t));});
+  const neighbors=Object.fromEntries(ROLES.map(r=>[r.id,new Set()]));
+  links.forEach(l=>{neighbors[l.a].add(l.b);neighbors[l.b].add(l.a);});
+
+  function bfs(src){const dist={[src]:0};const q=[src];while(q.length){const c=q.shift();neighbors[c].forEach(nb=>{if(dist[nb]===undefined){dist[nb]=dist[c]+1;q.push(nb);}});}return dist;}
+  const hereDist=bfs(HERE);
+
+  const initials=(name)=>name.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  const roleInit=(t)=>{const w=t.replace(/&/g,"").split(/\s+/).filter(Boolean);return ((w[0]||"")[0]+(w[1]||w[0]||"")[0]||"").toUpperCase().slice(0,2);};
+
+  const nodes = ROLES.map(r=>({...r, x:0,y:0,vx:0,vy:0,r:9+r.lvl*2.0}));
+  const nById = Object.fromEntries(nodes.map(n=>[n.id,n]));
+  const anchors={};
+  deptKeys.forEach((k,i)=>{const a=(i/deptKeys.length)*Math.PI*2 - Math.PI/2; anchors[k]={x:Math.cos(a)*1000,y:Math.sin(a)*660};});
+  nodes.forEach(n=>{const A=anchors[n.d];const j=()=>(Math.random()-.5)*120;n.x=A.x+j();n.y=A.y+j();});
+
+  let alpha=1;
+  function tick(){
+    if(alpha<0.005 && !dragNode) return;
+    const k=alpha;
+    for(const n of nodes){
+      const A=anchors[n.d];
+      n.vx+=(A.x-n.x)*0.010*k; n.vy+=(A.y-n.y)*0.010*k;
+      n.vx+=(0-n.x)*0.0012*k;  n.vy+=(0-n.y)*0.0012*k;
+    }
+    for(let i=0;i<nodes.length;i++){
+      const a=nodes[i];
+      for(let j=i+1;j<nodes.length;j++){
+        const b=nodes[j];
+        let dx=a.x-b.x,dy=a.y-b.y; let d2=dx*dx+dy*dy||0.01;
+        const f=(17000*(a.d===b.d?1:0.62))/d2*k;
+        const d=Math.sqrt(d2); dx/=d; dy/=d;
+        a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;
+      }
+    }
+    for(const l of links){
+      const a=nById[l.a],b=nById[l.b];
+      let dx=b.x-a.x,dy=b.y-a.y; const d=Math.sqrt(dx*dx+dy*dy)||0.01;
+      const f=(d-(a.d===b.d?155:320))*0.02*k; dx/=d; dy/=d;
+      a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;
+    }
+    for(const n of nodes){
+      if(n===dragNode){n.vx=0;n.vy=0;continue;}
+      n.vx*=0.86; n.vy*=0.86; n.x+=n.vx; n.y+=n.vy;
+    }
+    alpha*=0.992;
+  }
+
+  const canvas=document.getElementById("c"), ctx=canvas.getContext("2d");
+  const mini=document.getElementById("mini"), mctx=mini.getContext("2d");
+  let W=0,H=0,DPR=1, MW=0,MH=0;
+  const cam={x:0,y:0,scale:0.62,tx:0,ty:0,tscale:0.62};
+  function resize(){
+    DPR=Math.min(devicePixelRatio||1,2);
+    W=canvas.clientWidth;H=canvas.clientHeight;
+    canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+    MW=mini.clientWidth;MH=mini.clientHeight;
+    mini.width=MW*DPR;mini.height=MH*DPR;mctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener("resize",resize); resize();
+  function w2s(x,y){return {x:(x-cam.x)*cam.scale+W/2,y:(y-cam.y)*cam.scale+H/2};}
+  function s2w(x,y){return {x:(x-W/2)/cam.scale+cam.x,y:(y-H/2)/cam.scale+cam.y};}
+
+  let selected=null, hover=null, hiddenD=new Set(), searchHits=null, filterMode=null;
+  let compareMode=false, comparePicks=[];
+  const alertsOn=new Set(); const courseDone={};
+
+  function related(id){ if(!id)return null; const s=new Set([id]); neighbors[id].forEach(n=>s.add(n)); return s; }
+  function nodeVisible(n){ return !hiddenD.has(n.d); }
+  function passFilter(n){
+    if(filterMode==="vac") return n.vac>0;
+    if(filterMode==="near") return hereDist[n.id]<=1;
+    if(filterMode==="entry") return n.lvl===1;
+    return true;
+  }
+
+  const particles=Array.from({length:reduce?0:70},()=>({x:(Math.random()-.5)*2400,y:(Math.random()-.5)*2400,z:0.3+Math.random()*0.8,ph:Math.random()*6.28}));
+  const t0=performance.now();
+  let miniT={cx:0,cy:0,s:1};
+  let introStart=0, introK=reduce?1:0, defaultScale=0.6;
+
+  function draw(now){
+    const time=(now-t0)/1000;
+    cam.x+=(cam.tx-cam.x)*0.12; cam.y+=(cam.ty-cam.y)*0.12; cam.scale+=(cam.tscale-cam.scale)*0.12;
+    if(introStart){
+      const it=Math.min(1,(now-introStart)/1500);
+      const e=1-Math.pow(1-it,3);
+      const kk=0.12+0.88*e;
+      for(const n of nodes){ n.x=n.sx*kk; n.y=n.sy*kk; }
+      introK=e;
+      if(it>=1){ introStart=0; introK=1; for(const n of nodes){ n.x=n.sx; n.y=n.sy; } }
+    } else { tick(); }
+    ctx.clearRect(0,0,W,H);
+
+    ctx.save(); ctx.globalAlpha=0.5; drawGrid(); ctx.restore();
+
+    if(!reduce){
+      for(const p of particles){
+        const s=w2s(p.x,p.y);
+        if(s.x<-20||s.x>W+20||s.y<-20||s.y>H+20) continue;
+        const tw=0.35+0.3*Math.sin(time*1.5+p.ph);
+        ctx.beginPath(); ctx.arc(s.x,s.y,p.z*1.3*Math.max(cam.scale,.4),0,6.28);
+        ctx.fillStyle="rgba(120,150,230,"+tw.toFixed(3)+")"; ctx.fill();
+      }
+    }
+
+    const rel=related(selected);
+
+    for(const l of links){
+      const a=nById[l.a],b=nById[l.b];
+      if(!nodeVisible(a)||!nodeVisible(b)) continue;
+      const pa=w2s(a.x,a.y),pb=w2s(b.x,b.y);
+      const isRel=rel && rel.has(a.id) && rel.has(b.id);
+      const dim=(rel&&!isRel)||(searchHits&&!(searchHits.has(a.id)&&searchHits.has(b.id)))||(filterMode&&!(passFilter(a)&&passFilter(b)));
+      ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y);
+      if(isRel){
+        ctx.strokeStyle="rgba(56,232,208,.55)"; ctx.lineWidth=2.0; ctx.stroke();
+        if(!reduce){ const flow=(time*0.35)%1;
+          for(let f=0;f<2;f++){ const t=(flow+f*0.5)%1;
+            ctx.beginPath(); ctx.arc(pa.x+(pb.x-pa.x)*t,pa.y+(pb.y-pa.y)*t,2.4,0,6.28); ctx.fillStyle="#7ff6e6"; ctx.fill(); }
+        }
+      } else { ctx.strokeStyle= dim?"rgba(60,80,140,.10)":"rgba(80,105,180,.22)"; ctx.lineWidth=1; ctx.stroke(); }
+    }
+
+    for(const n of nodes){
+      if(!nodeVisible(n)) continue;
+      const p=w2s(n.x,n.y), col=DEPTS[n.d].color;
+      const active=(!rel||rel.has(n.id)) && (!searchHits||searchHits.has(n.id)) && passFilter(n);
+      const R=n.r*cam.scale, isSel=selected===n.id, isHov=hover===n.id;
+      const cmpIdx=comparePicks.indexOf(n.id);
+
+      const glow=isSel?1:(isHov?0.8:(active?0.5:0.12));
+      if(glow>0.15){
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R*3.2);
+        g.addColorStop(0,hex(col,0.55*glow)); g.addColorStop(1,hex(col,0));
+        ctx.beginPath(); ctx.arc(p.x,p.y,R*3.2,0,6.28); ctx.fillStyle=g; ctx.fill();
+      }
+      if(n.vac>0 && !reduce && active){
+        const pr=(time*0.8+n.lvl)%1;
+        ctx.beginPath(); ctx.arc(p.x,p.y,R+pr*18,0,6.28);
+        ctx.strokeStyle="rgba(255,209,102,"+(0.5*(1-pr)).toFixed(3)+")"; ctx.lineWidth=1.5; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(p.x,p.y,R,0,6.28);
+      ctx.fillStyle=active?col:"#26355f"; ctx.globalAlpha=active?1:0.5; ctx.fill(); ctx.globalAlpha=1;
+      ctx.beginPath(); ctx.arc(p.x-R*0.28,p.y-R*0.28,R*0.42,0,6.28); ctx.fillStyle=hex("#ffffff",active?0.28:0.08); ctx.fill();
+      if(isSel||n.here||cmpIdx>=0){
+        ctx.beginPath(); ctx.arc(p.x,p.y,R+4,0,6.28);
+        ctx.strokeStyle= cmpIdx>=0?"#ffd166":(n.here?"#38e8d0":"#ffffff"); ctx.lineWidth=1.8; ctx.stroke();
+      }
+      if(n.here){ ctx.beginPath(); ctx.arc(p.x,p.y,R+9+(reduce?0:Math.sin(time*3)*1.5),0,6.28); ctx.strokeStyle="rgba(56,232,208,.6)"; ctx.lineWidth=1.2; ctx.stroke(); }
+      if(cmpIdx>=0){
+        ctx.fillStyle="#ffd166"; ctx.beginPath(); ctx.arc(p.x+R+2,p.y-R-2,9,0,6.28); ctx.fill();
+        ctx.fillStyle="#0a1330"; ctx.font="800 12px Sora, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+        ctx.fillText(cmpIdx===0?"A":"B", p.x+R+2, p.y-R-1);
+      }
+    }
+
+    if(introK>0.65 && (cam.scale>0.36 || selected || hover)){
+      ctx.textAlign="center"; ctx.textBaseline="top";
+      const fs=Math.max(11,12*Math.min(cam.scale,1.35));
+      ctx.font="600 "+fs.toFixed(0)+"px Manrope, 'Segoe UI', sans-serif";
+      const placed=[], cand=[];
+      for(const n of nodes){
+        if(!nodeVisible(n)) continue;
+        const active=(!rel||rel.has(n.id)) && (!searchHits||searchHits.has(n.id)) && passFilter(n);
+        if(!active) continue;
+        const isSel=selected===n.id, isHov=hover===n.id, force=isSel||isHov||n.here;
+        if(cam.scale<=0.36 && !force) continue;
+        cand.push({n,isSel,isHov,force});
+      }
+      cand.sort((a,b)=>(b.force-a.force)||(b.n.r-a.n.r));
+      for(const c of cand){
+        const n=c.n, p=w2s(n.x,n.y), R=n.r*cam.scale;
+        const w=ctx.measureText(n.t).width;
+        const rx=p.x-w/2-4, ry=p.y+R+5, rw=w+8, rh=fs+4;
+        let clash=false;
+        if(!c.force){ for(const r of placed){ if(rx<r.x+r.w&&rx+rw>r.x&&ry<r.y+r.h&&ry+rh>r.y){clash=true;break;} } }
+        if(clash) continue;
+        placed.push({x:rx,y:ry,w:rw,h:rh});
+        ctx.fillStyle= c.isSel||c.isHov?"#eaf0ff":"rgba(202,216,255,.8)";
+        ctx.shadowColor="rgba(3,7,20,.92)"; ctx.shadowBlur=7;
+        ctx.fillText(n.t, p.x, p.y+R+6);
+      }
+      ctx.shadowBlur=0;
+    }
+
+    drawMini();
+    requestAnimationFrame(draw);
+  }
+
+  function drawGrid(){
+    const step=140*cam.scale; if(step<24) return;
+    const ox=((W/2-cam.x*cam.scale)%step+step)%step, oy=((H/2-cam.y*cam.scale)%step+step)%step;
+    ctx.strokeStyle="rgba(70,95,170,.06)"; ctx.lineWidth=1; ctx.beginPath();
+    for(let x=ox;x<W;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,H);}
+    for(let y=oy;y<H;y+=step){ctx.moveTo(0,y);ctx.lineTo(W,y);}
+    ctx.stroke();
+  }
+
+  function drawMini(){
+    mctx.clearRect(0,0,MW,MH);
+    let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    for(const n of nodes){ if(n.x<minX)minX=n.x; if(n.x>maxX)maxX=n.x; if(n.y<minY)minY=n.y; if(n.y>maxY)maxY=n.y; }
+    const pad=80; minX-=pad;minY-=pad;maxX+=pad;maxY+=pad;
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    const s=Math.min(MW/(maxX-minX), MH/(maxY-minY))*0.9;
+    miniT={cx,cy,s};
+    const m2=(x,y)=>({x:(x-cx)*s+MW/2, y:(y-cy)*s+MH/2});
+    mctx.strokeStyle="rgba(80,105,180,.28)"; mctx.lineWidth=0.6;
+    for(const l of links){ const a=nById[l.a],b=nById[l.b]; if(!nodeVisible(a)||!nodeVisible(b))continue; const pa=m2(a.x,a.y),pb=m2(b.x,b.y); mctx.beginPath();mctx.moveTo(pa.x,pa.y);mctx.lineTo(pb.x,pb.y);mctx.stroke(); }
+    for(const n of nodes){ if(!nodeVisible(n))continue; const p=m2(n.x,n.y); mctx.beginPath(); mctx.arc(p.x,p.y,n.here?3:2,0,6.28); mctx.fillStyle=n.here?"#38e8d0":DEPTS[n.d].color; mctx.fill(); }
+    const tl=s2w(0,0), br=s2w(W,H); const a=m2(tl.x,tl.y), b=m2(br.x,br.y);
+    mctx.strokeStyle="rgba(255,255,255,.55)"; mctx.lineWidth=1;
+    mctx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
+    mctx.fillStyle="rgba(255,255,255,.05)"; mctx.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);
+  }
+  mini.addEventListener("click",e=>{
+    const rect=mini.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    cam.tx=(mx-MW/2)/miniT.s+miniT.cx; cam.ty=(my-MH/2)/miniT.s+miniT.cy;
+  });
+
+  function hex(c,a){ if(c[0]==="#")c=c.slice(1); const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; }
+
+  function hit(sx,sy){
+    let best=null,bd=1e9;
+    for(const n of nodes){ if(!nodeVisible(n))continue; const p=w2s(n.x,n.y); const R=Math.max(n.r*cam.scale,10)+6; const dx=p.x-sx,dy=p.y-sy,d=dx*dx+dy*dy; if(d<R*R&&d<bd){bd=d;best=n;} }
+    return best;
+  }
+
+  let dragging=false, dragNode=null, moved=false, last={x:0,y:0}, downAt=0;
+  canvas.addEventListener("pointerdown",e=>{
+    canvas.setPointerCapture(e.pointerId);
+    last={x:e.clientX,y:e.clientY}; moved=false; downAt=Date.now();
+    const n=hit(e.clientX,e.clientY);
+    if(n && !compareMode){dragNode=n;n.fixed=true;} else {dragging=true;canvas.classList.add("grabbing");}
+  });
+  canvas.addEventListener("pointermove",e=>{
+    const dx=e.clientX-last.x,dy=e.clientY-last.y;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    if(dragNode){ const wp=s2w(e.clientX,e.clientY); dragNode.x=wp.x;dragNode.y=wp.y;dragNode.vx=0;dragNode.vy=0; alpha=Math.max(alpha,0.35); }
+    else if(dragging){ cam.tx-=dx/cam.scale; cam.ty-=dy/cam.scale; cam.x=cam.tx; cam.y=cam.ty; }
+    else { const n=hit(e.clientX,e.clientY); hover=n?n.id:null; canvas.classList.toggle("pointer",!!n); }
+    last={x:e.clientX,y:e.clientY};
+  });
+  canvas.addEventListener("pointerup",e=>{
+    canvas.classList.remove("grabbing");
+    if(dragNode) dragNode.fixed=false;
+    if(!moved && Date.now()-downAt<400){
+      const n=hit(e.clientX,e.clientY);
+      if(compareMode){ if(n) addCompare(n.id); }
+      else if(n) selectNode(n.id,true); else closePanel();
+    }
+    dragging=false; dragNode=null;
+  });
+  canvas.addEventListener("wheel",e=>{
+    e.preventDefault();
+    const before=s2w(e.clientX,e.clientY);
+    cam.tscale=cam.scale=Math.max(0.28,Math.min(2.4,cam.scale*Math.exp(-e.deltaY*0.0012)));
+    const after=s2w(e.clientX,e.clientY);
+    cam.tx=cam.x+=(before.x-after.x); cam.ty=cam.y+=(before.y-after.y);
+  },{passive:false});
+
+  function focusNode(id){ const n=nById[id]; cam.tx=n.x; cam.ty=n.y; cam.tscale=Math.max(cam.scale,0.95); }
+  function selectNode(id,focus){ selected=id; if(focus)focusNode(id); renderPanel(id); openPanel(); }
+
+  const panel=document.getElementById("panel"), pbody=document.getElementById("p-body"), minimapEl=document.getElementById("minimap");
+  function openPanel(){panel.classList.add("open"); minimapEl.classList.add("hide");}
+  function closePanel(){panel.classList.remove("open"); minimapEl.classList.remove("hide"); selected=null;}
+  document.getElementById("p-close").onclick=closePanel;
+
+  function courseState(roleId,i,base){ const set=courseDone[roleId]; return set&&set.has(i)?100:base; }
+
+  function renderPanel(id){
+    const n=nById[id], dept=DEPTS[n.d];
+    const nexts=(n.next||[]).filter(x=>byId[x]), sides=(n.side||[]).filter(x=>byId[x]);
+    const courses=n.courses.map((ck,i)=>{const c=C[ck];return {i,nm:c[0],pc:courseState(id,i,c[1])};});
+    const ready=Math.round(courses.reduce((s,c)=>s+c.pc,0)/courses.length);
+    const aOn=alertsOn.has(id);
+    const steps=hereDist[id]===undefined?"—":(hereDist[id]===0?"You're here":hereDist[id]+(hereDist[id]===1?" step":" steps"));
+    const movedIds=[...new Set([...(n.next||[]),...(n.side||[])])].filter(x=>byId[x]).slice(0,4);
+    const pcts=[44,29,18,9];
+
+    pbody.innerHTML=`
+      <span class="p-pill" style="color:${dept.color}"><span style="width:8px;height:8px;border-radius:50%;background:${dept.color};box-shadow:0 0 8px ${dept.color}"></span>${dept.name}</span>
+      ${n.here?`<span class="p-here"><span class="live"></span>You are here</span>`:""}
+      <h2 class="p-title">${n.t}</h2>
+
+      <div class="stats">
+        <div class="stat"><div class="sk">Pay band</div><div class="sv">${PAY[n.lvl]}</div></div>
+        <div class="stat"><div class="sk">Typical time</div><div class="sv">${TIME[n.lvl]}</div></div>
+        <div class="stat"><div class="sk">From you</div><div class="sv acc">${steps}</div></div>
+      </div>
+
+      <p class="p-desc">${n.desc}</p>
+
+      ${n.story?`<div class="sect"><div class="story">
+        <div class="savatar" style="background:linear-gradient(150deg,${dept.color},${hex(dept.color,.55)})">${initials(n.story.name)}</div>
+        <div><p class="squote">"${n.story.q}"</p><div class="sname"><b>${n.story.name}</b> · ${n.story.role}</div></div>
+      </div></div>`:""}
+
+      <div class="sect">
+        <div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-9-5-9 5 9 5 9-5zM4 12v5l7 4 7-4v-5"/></svg>Vacancies</div>
+        <div class="vac ${n.vac>0?'open':''}">
+          <div>
+            <div class="vn">${n.vac>0?`<span class="num">${n.vac}</span> open ${n.vac===1?'vacancy':'vacancies'}`:"No current vacancies"}</div>
+            <div class="vsub">${n.vac>0?"Across the network right now":"Turn alerts on and we'll tell you"}</div>
+          </div>
+          <div class="toggle" data-alerts="${id}"><span class="tl">ALERTS</span><span class="switch ${aOn?'on':''}"></span></div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Courses to complete · Cornerstone</div>
+        ${courses.map(c=>`<div class="course ${c.pc>=100?'done':''}" data-course="${id}:${c.i}"><div class="ct"><span class="nm">${c.nm}</span><span class="pc">${c.pc}%</span></div><div class="bar"><i style="width:${c.pc}%"></i></div></div>`).join("")}
+        <div class="readiness">Role readiness: <b>${ready}%</b> — tap a course to log it complete</div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>1-week work experience</div>
+        <div class="we"><p>Spend a week shadowing this role before you commit. A real taste of the job — twice a year, on us.</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span class="slots">2 placements left this year</span>
+          <button class="btn primary" data-we="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Request placement</button></div>
+        </div>
+      </div>
+
+      ${nexts.length?`<div class="sect"><div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Step up · Next roles</div><div class="chips">${nexts.map(x=>chip(x)).join("")}</div></div>`:""}
+      ${sides.length?`<div class="sect"><div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5"/></svg>Step across · Side-steps</div><div class="chips">${sides.map(x=>chip(x)).join("")}</div></div>`:""}
+
+      ${movedIds.length?`<div class="sect moved"><div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3.1a4 4 0 0 1 0 7.8M22 21v-2a4 4 0 0 0-3-3.9M8 3.1a4 4 0 1 0 0 7.8M2 21v-2a4 4 0 0 1 3-3.9"/></svg>People who did this role went on to</div>
+        ${movedIds.map((x,i)=>{const m=byId[x],c=DEPTS[m.d].color;return `<div class="mrow" data-goto="${x}"><div class="mav" style="background:linear-gradient(150deg,${c},${hex(c,.55)})">${roleInit(m.t)}</div><div class="mname">${m.t}</div><div class="mpc">${pcts[i]}%<span> moved here</span></div></div>`;}).join("")}
+      </div>`:""}
+
+      <div class="cvfoot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg><p>Every course and placement you complete builds your <b>ETEL CV</b> — your record of everything you've learned here.</p></div>
+    `;
+    pbody.querySelectorAll("[data-goto]").forEach(el=>el.onclick=()=>selectNode(el.dataset.goto,true));
+    pbody.querySelectorAll("[data-course]").forEach(el=>el.onclick=()=>{
+      const [rid,ci]=el.dataset.course.split(":"); const idx=+ci;
+      courseDone[rid]=courseDone[rid]||new Set();
+      if(courseDone[rid].has(idx)) courseDone[rid].delete(idx); else{courseDone[rid].add(idx);toast("Logged to your ETEL CV ✓");}
+      renderPanel(rid);
+    });
+    pbody.querySelectorAll("[data-alerts]").forEach(el=>el.onclick=()=>{
+      const rid=el.dataset.alerts;
+      if(alertsOn.has(rid)){alertsOn.delete(rid);toast("Vacancy alerts off");} else {alertsOn.add(rid);toast("Vacancy alerts on 🔔");}
+      renderPanel(rid);
+    });
+    pbody.querySelectorAll("[data-we]").forEach(el=>el.onclick=()=>toast("Placement requested — HR will be in touch"));
+    pbody.scrollTop=0;
+  }
+  function chip(id){const n=byId[id],c=DEPTS[n.d].color; return `<span class="chip" data-goto="${id}"><span class="cdot" style="background:${c};box-shadow:0 0 8px ${c}"></span>${n.t}<span class="arr">→</span></span>`;}
+
+  const cmpbar=document.getElementById("cmpbar"), cmpcount=document.getElementById("cmpcount");
+  const cmpOverlay=document.getElementById("cmpOverlay"), cmpCard=document.getElementById("cmpCard"), btnCompare=document.getElementById("btn-compare");
+  function setCompare(on){
+    compareMode=on; comparePicks=[];
+    btnCompare.classList.toggle("active",on);
+    cmpbar.classList.toggle("show",on);
+    cmpcount.textContent="0/2";
+    if(on){ closePanel(); toast("Pick two roles to compare"); }
+  }
+  function addCompare(id){
+    if(comparePicks.includes(id)) return;
+    comparePicks.push(id); cmpcount.textContent=comparePicks.length+"/2";
+    if(comparePicks.length===2){ renderCompare(comparePicks[0],comparePicks[1]); cmpbar.classList.remove("show"); compareMode=false; btnCompare.classList.remove("active"); }
+  }
+  function renderCompare(aId,bId){
+    const apart=bfs(aId)[bId];
+    const col=(id,letter)=>{
+      const n=byId[id],d=DEPTS[n.d];
+      return `<div class="cmpCol">
+        <div class="ch"><span class="cbadge" style="background:${d.color}">${letter}</span><span class="cdept" style="color:${d.color}">${d.name}</span></div>
+        <h4>${n.t}</h4>
+        <div class="mrow2"><span class="k">Pay band</span><span class="v">${PAY[n.lvl]}</span></div>
+        <div class="mrow2"><span class="k">Career level</span><span class="v">${n.lvl} / 6</span></div>
+        <div class="mrow2"><span class="k">Courses</span><span class="v">${n.courses.length}</span></div>
+        <div class="mrow2"><span class="k">Open vacancies</span><span class="v" style="color:${n.vac>0?'#ffd166':'inherit'}">${n.vac}</span></div>
+        <div class="mrow2"><span class="k">Steps from you</span><span class="v">${hereDist[id]===0?"0":hereDist[id]}</span></div>
+      </div>`;
+    };
+    cmpCard.innerHTML=`
+      <div class="cmpTop"><h3>Compare roles</h3><button class="x" id="cmpx"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="cmpApart"><b>${apart===undefined?"—":apart} steps</b> apart in the network</div>
+      <div class="cmpGrid">${col(aId,"A")}${col(bId,"B")}</div>
+      <div style="text-align:center;margin-top:18px"><button class="btn" id="cmpagain" style="margin:0 auto">Compare two more</button></div>
+    `;
+    cmpOverlay.classList.add("open");
+    document.getElementById("cmpx").onclick=closeCompare;
+    document.getElementById("cmpagain").onclick=()=>{ closeCompare(); setCompare(true); };
+  }
+  function closeCompare(){ cmpOverlay.classList.remove("open"); comparePicks=[]; }
+  btnCompare.onclick=()=>setCompare(!compareMode);
+  document.getElementById("cmpcancel").onclick=()=>setCompare(false);
+  cmpOverlay.addEventListener("click",e=>{ if(e.target===cmpOverlay) closeCompare(); });
+
+  const toastBox=document.getElementById("toasts");
+  function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${msg}`; toastBox.appendChild(t); setTimeout(()=>t.remove(),2900); }
+
+  const legend=document.getElementById("legend");
+  deptKeys.forEach(k=>{
+    const row=document.createElement("div"); row.className="row";
+    row.innerHTML=`<span class="dot" style="color:${DEPTS[k].color};background:${DEPTS[k].color}"></span><span>${DEPTS[k].name}</span>`;
+    row.onclick=()=>{ if(hiddenD.has(k)){hiddenD.delete(k);row.classList.remove("off");} else {hiddenD.add(k);row.classList.add("off");} };
+    legend.appendChild(row);
+  });
+
+  document.querySelectorAll(".fchip").forEach(el=>{
+    el.onclick=()=>{
+      const f=el.dataset.f;
+      document.querySelectorAll(".fchip").forEach(x=>x.classList.remove("on"));
+      if(filterMode===f){ filterMode=null; } else { filterMode=f; el.classList.add("on"); }
+    };
+  });
+
+  const search=document.getElementById("search");
+  search.addEventListener("input",()=>{
+    const q=search.value.trim().toLowerCase();
+    searchHits = q ? new Set(nodes.filter(n=>n.t.toLowerCase().includes(q)||DEPTS[n.d].name.toLowerCase().includes(q)).map(n=>n.id)) : null;
+  });
+  search.addEventListener("keydown",e=>{ if(e.key==="Enter"&&searchHits&&searchHits.size) selectNode([...searchHits][0],true); });
+
+  document.getElementById("btn-here").onclick=()=>{ if(compareMode)setCompare(false); selectNode(HERE,true); };
+  document.getElementById("btn-reset").onclick=()=>{
+    cam.tx=0;cam.ty=0;cam.tscale=defaultScale; closePanel(); closeCompare(); setCompare(false);
+    search.value="";searchHits=null; hiddenD.clear(); filterMode=null;
+    legend.querySelectorAll(".row").forEach(r=>r.classList.remove("off"));
+    document.querySelectorAll(".fchip").forEach(x=>x.classList.remove("on"));
+  };
+  window.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(cmpOverlay.classList.contains("open"))closeCompare(); else if(compareMode)setCompare(false); else closePanel(); } });
+
+  document.getElementById("vnum").textContent=totalVac;
+
+  for(let i=0;i<650;i++) tick();
+  let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;
+  for(const n of nodes){ n.sx=n.x; n.sy=n.y; if(n.x<bx0)bx0=n.x; if(n.x>bx1)bx1=n.x; if(n.y<by0)by0=n.y; if(n.y>by1)by1=n.y; }
+  defaultScale=Math.max(0.54,Math.min(0.9, Math.min(W/(bx1-bx0), H/(by1-by0))*0.96));
+  cam.x=cam.tx=(bx0+bx1)/2; cam.y=cam.ty=(by0+by1)/2;
+  if(reduce){ cam.scale=cam.tscale=defaultScale; }
+  else {
+    for(const n of nodes){ n.x=n.sx*0.12; n.y=n.sy*0.12; }
+    cam.scale=defaultScale*0.8; cam.tscale=defaultScale;
+    introStart=performance.now();
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+
+</body>
+</html>
