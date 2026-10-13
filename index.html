@@ -223,7 +223,7 @@
 
   .pdflink{
     display:flex;align-items:center;gap:11px;
-    padding:13px 15px;margin:22px 0;border-radius:13px;text-decoration:none;cursor:pointer;
+    padding:13px 15px;border-radius:13px;text-decoration:none;cursor:pointer;
     background:linear-gradient(120deg,rgba(77,124,255,.16),rgba(56,232,208,.08));
     border:1px solid #2b4488;color:var(--ink);
     font-weight:700;font-size:14px;transition:border-color .18s, transform .18s, box-shadow .18s;
@@ -909,11 +909,14 @@
         </div>
       </div>
 
-      <a class="pdflink" href="${PDF_URL}" target="_blank" rel="noopener noreferrer">
-        <svg class="doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-        <span>View Your Employee Benefits (PDF)</span>
-        <svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M8 7h9v9"/></svg>
-      </a>
+      <div class="sect">
+        <div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7s-1-5-3.5-5A1.5 1.5 0 0 0 8 4.5C8 7 12 7 12 7zM12 7s1-5 3.5-5A1.5 1.5 0 0 1 16 4.5C16 7 12 7 12 7z"/></svg>Employee Benefits</div>
+        <a class="pdflink" href="${PDF_URL}" target="_blank" rel="noopener noreferrer">
+          <svg class="doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span>Open the role guide (PDF)</span>
+          <svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M8 7h9v9"/></svg>
+        </a>
+      </div>
 
       <div class="sect">
         <div class="sect-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Courses to complete · Cornerstone</div>
